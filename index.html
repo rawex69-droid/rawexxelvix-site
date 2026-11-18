@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#120000"><title>RAWEXxELVİX</title>
+<style>
+:root{--red:#ff1828;--glow:0 0 9px #ff1828,0 0 25px #a90012;--bg:#090000}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;color:#ff6b73;background:radial-gradient(ellipse at 50% 35%,#310006 0,#160003 42%,#070000 100%);font-family:Georgia,'Courier New',serif;letter-spacing:3px}
+main{width:min(760px,100%);margin:auto;padding:70px 22px 45px;text-align:center}
+h1{font-size:clamp(2rem,8vw,3.7rem);letter-spacing:.16em;color:#ff2636;text-shadow:var(--glow);margin:55px 0 20px;overflow-wrap:anywhere}
+.loading{letter-spacing:.35em;color:#b65a60;margin-bottom:100px;font-size:14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:25px 28px}
+.navbtn{min-height:92px;background:#170002a8;border:2px solid var(--red);border-radius:12px;color:#ff3845;font: bold 23px Georgia,serif;letter-spacing:5px;text-shadow:0 0 8px #ff1828;box-shadow:0 0 8px #e00018,inset 0 0 14px #4b0008;cursor:pointer}
+.navbtn:active,.navbtn:hover{background:#3a0008;box-shadow:var(--glow)}
+.social{display:grid;gap:22px;justify-content:center;margin:125px 0 75px;font-size:19px;letter-spacing:3px}
+.social a,.social button{color:#e78389;text-decoration:none;background:none;border:0;font:inherit;letter-spacing:inherit;cursor:pointer}
+.social a:hover,.social button:hover{color:#fff;text-shadow:var(--glow)}
+.panel{display:none;margin:28px 0;padding:22px;text-align:left;border:1px solid #a90018;border-radius:12px;background:#160003d9;box-shadow:0 0 18px #59000a}
+.panel h2{color:#ff3444;letter-spacing:4px;text-align:center}
+.panel p{letter-spacing:1px;line-height:1.7;white-space:pre-wrap}
+.section{border-top:1px solid #6f1720;padding:14px 0}
+.smallbtn,.fieldbtn{background:#3b0008;border:1px solid #ff2636;color:#ffd5d7;padding:10px 14px;border-radius:7px;cursor:pointer;margin:5px}
+input,textarea{display:block;width:100%;margin:9px 0 14px;padding:12px;background:#090000;color:#ffe1e3;border:1px solid #a90018;border-radius:7px;font:16px Arial;letter-spacing:1px}
+label{font-size:12px;color:#ff9aa0;letter-spacing:2px}
+.admin-actions{display:flex;flex-wrap:wrap;gap:5px}
+footer{color:#78363b;font-size:10px;letter-spacing:2px;margin-top:45px}
+@media(max-width:430px){main{padding-top:45px}.grid{gap:15px}.navbtn{min-height:82px;font-size:18px;letter-spacing:3px}.loading{margin-bottom:75px}.social{margin-top:90px}}
+</style></head>
+<body><main>
+<h1>RAWEXxELVİX</h1><div class="loading">SYSTEM LOADING_</div>
+<nav class="grid">
+<button class="navbtn" data-open="sızıntı">SIZINTI</button>
+<button class="navbtn" data-open="tool">TOOL</button>
+<button class="navbtn" data-open="hakkımda">HAKKIMDA</button>
+<button class="navbtn" id="adminBtn">ADMIN</button>
+</nav>
+<section id="contentPanel" class="panel"><h2 id="panelTitle"></h2><div id="panelBody"></div></section>
+<section id="adminPanel" class="panel">
+<h2>ADMIN PANEL</h2><p>Buradan ana sayfaya yeni bölümler ekleyebilir, mevcut bölümleri düzenleyebilir veya silebilirsin.</p>
+<div id="adminList"></div>
+<div class="section"><h3>YENİ BÖLÜM</h3><label>BAŞLIK</label><input id="newTitle" maxlength="50" placeholder="Örn. ÖZEL MESAJ"><label>AÇIKLAMA</label><textarea id="newBody" rows="4" maxlength="3000" placeholder="Bölümün içeriği..."></textarea><button class="smallbtn" id="addSection">BÖLÜM EKLE</button></div>
+<button class="smallbtn" id="logout">ADMIN OTURUMUNU KAPAT</button>
+</section>
+<div class="social">
+<a href="https://www.tiktok.com/@hayxtsiz_xd" target="_blank" rel="noopener">♪ &nbsp; hayxtsiz_xd</a>
+<a href="https://www.tiktok.com/@ensisworld" target="_blank" rel="noopener">♪ &nbsp; ensisworld</a>
+<button id="discordCopy">◉ &nbsp; rawexbaba (Discord)</button>
+</div>
+<footer>RAWEXxELVİX · PRIVATE WEB SPACE</footer>
+</main>
+<script>
+const API='/.netlify/functions/content';
+const defaults=[
+ {id:'sızıntı',title:'SIZINTI',body:'Bu bölümün içeriğini ADMIN panelinden değiştirebilirsin.'},
+ {id:'tool',title:'TOOL',body:'Araçlar ve bağlantılar burada gösterilebilir.'},
+ {id:'hakkımda',title:'HAKKIMDA',body:'RAWEXxELVİX alanına hoş geldin.'}
+];
+let data={sections:defaults};
+const $=id=>document.getElementById(id);
+function showPanel(title,body){$('adminPanel').style.display='none';$('contentPanel').style.display='block';$('panelTitle').textContent=title;$('panelBody').replaceChildren();const p=document.createElement('p');p.textContent=body;$('panelBody').append(p);$('contentPanel').scrollIntoView({behavior:'smooth',block:'start'});}
+async function load(){try{const r=await fetch(API);if(r.ok){const d=await r.json();if(Array.isArray(d.sections))data=d;}}catch(e){console.warn('İçerik yüklenemedi',e)}}
+async function save(){const pass=sessionStorage.getItem('rx_admin');const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','x-admin-password':pass},body:JSON.stringify(data)});if(r.status===401){sessionStorage.removeItem('rx_admin');alert('Şifre doğrulanamadı. Yeniden giriş yap.');return false;}if(!r.ok){alert('Kaydedilemedi. Netlify ayarlarını kontrol et.');return false;}return true;}
+function renderAdmin(){const list=$('adminList');list.replaceChildren();data.sections.forEach((s,i)=>{const wrap=document.createElement('div');wrap.className='section';const title=document.createElement('h3');title.textContent=s.title;const editTitle=document.createElement('input');editTitle.value=s.title;editTitle.maxLength=50;const editBody=document.createElement('textarea');editBody.rows=3;editBody.maxLength=3000;editBody.value=s.body;const actions=document.createElement('div');actions.className='admin-actions';const saveBtn=document.createElement('button');saveBtn.className='smallbtn';saveBtn.textContent='DÜZENLEMEYİ KAYDET';saveBtn.onclick=async()=>{data.sections[i].title=editTitle.value.trim();data.sections[i].body=editBody.value;if(!data.sections[i].title)return alert('Başlık boş olamaz.');if(await save()){renderAdmin();alert('Değişiklik kaydedildi.');}};const del=document.createElement('button');del.className='smallbtn';del.textContent='SİL';del.onclick=async()=>{if(confirm('Bu bölüm silinsin mi?')){data.sections.splice(i,1);if(await save())renderAdmin();}};wrap.append(title,document.createTextNode('Başlık'),editTitle,document.createTextNode('İçerik'),editBody,actions);actions.append(saveBtn,del);list.append(wrap);});}
+function renderExtraNav(){const nav=document.querySelector('.grid');nav.querySelectorAll('[data-custom]').forEach(x=>x.remove());data.sections.filter(s=>s.id.startsWith('custom-')).forEach(s=>{const b=document.createElement('button');b.className='navbtn';b.dataset.open=s.id;b.dataset.custom='1';b.textContent=s.title;nav.insertBefore(b,$('adminBtn'));});}
+document.querySelector('.grid').addEventListener('click',e=>{const b=e.target.closest('[data-open]');if(!b)return;const s=data.sections.find(x=>x.id===b.dataset.open)||data.sections.find(x=>x.title.toLowerCase()===b.textContent.toLowerCase());if(s)showPanel(s.title,s.body);else showPanel(b.textContent,'Bu bölüm henüz eklenmedi.');});
+$('adminBtn').onclick=async()=>{let pass=sessionStorage.getItem('rx_admin');if(!pass){pass=prompt('ADMIN ŞİFRESİ');if(!pass)return;}const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','x-admin-password':pass},body:JSON.stringify(data)});if(r.status===401){sessionStorage.removeItem('rx_admin');alert('Şifre yanlış.');return;}if(!r.ok){alert('Sunucuya ulaşılamadı.');return;}sessionStorage.setItem('rx_admin',pass);$('contentPanel').style.display='none';$('adminPanel').style.display='block';renderAdmin();$('adminPanel').scrollIntoView({behavior:'smooth'});};
+$('addSection').onclick=async()=>{const title=$('newTitle').value.trim(),body=$('newBody').value;if(!title)return alert('Başlık yaz.');data.sections.push({id:'custom-'+Date.now(),title,body});if(await save()){$('newTitle').value='';$('newBody').value='';renderAdmin();renderExtraNav();alert('Yeni bölüm eklendi.');}};
+$('logout').onclick=()=>{sessionStorage.removeItem('rx_admin');$('adminPanel').style.display='none';alert('Admin oturumu kapatıldı.');};
+$('discordCopy').onclick=async()=>{try{await navigator.clipboard.writeText('rawexbaba');alert('Discord kullanıcı adı kopyalandı: rawexbaba');}catch(e){alert('Discord: rawexbaba');}};
+load().then(renderExtraNav);
+</script></body></html>
