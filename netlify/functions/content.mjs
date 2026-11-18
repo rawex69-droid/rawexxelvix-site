@@ -1,6 +1,7 @@
 import { getStore } from "@netlify/blobs";
+import { createHash, timingSafeEqual } from "node:crypto";
 
-const store = getStore("rawexxelvix-content");
+const STORE_NAME = "rawexxelvix-content";
 const defaults = {
   sections: [
     { id: "sızıntı", title: "SIZINTI", body: "Bu bölümün içeriğini ADMIN panelinden değiştirebilirsin." },
@@ -9,22 +10,59 @@ const defaults = {
   ]
 };
 
+const noStore = { "Cache-Control": "no-store" };
+
+// Compares two strings in constant time (hashing first so lengths always match).
+function safeEqual(a, b) {
+  const ha = createHash("sha256").update(a, "utf8").digest();
+  const hb = createHash("sha256").update(b, "utf8").digest();
+  return timingSafeEqual(ha, hb);
+}
+
+// The browser may send the password URI-encoded so that non-Latin characters
+// (e.g. Turkish letters) can travel safely in an HTTP header.
+function suppliedCandidates(raw) {
+  const out = [raw.trim()];
+  try {
+    const decoded = decodeURIComponent(raw).trim();
+    if (decoded !== out[0]) out.push(decoded);
+  } catch {
+    // not URI-encoded; use the raw value only
+  }
+  return out;
+}
+
+function isAuthorized(request) {
+  const expected = (process.env.ADMIN_PASSWORD ?? "").trim();
+  const supplied = request.headers.get("x-admin-password");
+  if (!expected || !supplied) return false;
+  return suppliedCandidates(supplied).some((candidate) => safeEqual(candidate, expected));
+}
+
 export default async (request) => {
+  const store = getStore(STORE_NAME);
+  const url = new URL(request.url);
+
   if (request.method === "GET") {
     const content = await store.get("site-content", { type: "json" });
-    return Response.json(content ?? defaults, {
-      headers: { "Cache-Control": "no-store" }
-    });
+    return Response.json(content ?? defaults, { headers: noStore });
   }
 
   if (request.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
 
-  const expected = process.env.ADMIN_PASSWORD;
-  const supplied = request.headers.get("x-admin-password");
-  if (!expected || !supplied || supplied !== expected) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  if (!process.env.ADMIN_PASSWORD) {
+    console.error("ADMIN_PASSWORD environment variable is not set");
+  }
+
+  if (!isAuthorized(request)) {
+    return Response.json({ error: "Unauthorized" }, { status: 401, headers: noStore });
+  }
+
+  // Login check only: verify the password without touching stored content.
+  if (url.searchParams.get("action") === "login") {
+    return Response.json({ ok: true }, { headers: noStore });
   }
 
   let content;
@@ -47,5 +85,5 @@ export default async (request) => {
   };
 
   await store.setJSON("site-content", clean);
-  return Response.json({ ok: true });
+  return Response.json({ ok: true }, { headers: noStore });
 };
